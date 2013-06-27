@@ -1,3 +1,13 @@
+"""
+
+:author: Sam Hart <sam@glencoesoftware.com>
+
+Glue between Github issues and Redmine
+Copyright (c) 2007, Glencoe Software, Inc.
+See LICENSE for details.
+
+"""
+
 import logging, copy
 
 from redmine import Redmine
@@ -44,7 +54,7 @@ class Corgi:
 	ever want to.
 	"""
 
-	def __init__(self, serverURL = None, authkey = None):
+	def __init__(self, serverURL = None, authKey = None):
 		"""
 		Constructor which takes the URL for the Redmine server and
 		associated user authentication key. Will set up the instance
@@ -63,7 +73,7 @@ class Corgi:
 			self.setServerURL(serverURL)
 
 		if authKey:
-			self.setAuthKey(authkey)
+			self.setAuthKey(authKey)
 
 		try:
 			self.connect()
@@ -87,7 +97,7 @@ class Corgi:
 	def getServerURL(self):
 		return copy.copy(self._serverURL)
 
-	def setAuthKey(authkey):
+	def setAuthKey(self, authkey):
 		"""
 		If the authentication key is not set, will set it. Otherwise will raise
 		the RedmineServerAlreadySet exception.
