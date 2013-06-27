@@ -5,11 +5,6 @@ import simplejson
 import re
 
 
-class MainHandler(tornado.web.RequestHandler):
-    def get(self):
-        self.write("Hello, world")
-
-
 class EventHandler(tornado.web.RequestHandler):
     def post(self):
         data = simplejson.loads(self.request.body)
@@ -17,9 +12,11 @@ class EventHandler(tornado.web.RequestHandler):
         title = pr['title']
         body = pr['body']
         url = pr['url']
+        sender = data['sender']['login']
         
         print title
         print body
+        print sender
         
         cases = set(re.findall(r'\bgs-(\d+)', title))
         cases = cases.union(re.findall(r'\bgs-(\d+)', body))
@@ -28,7 +25,6 @@ class EventHandler(tornado.web.RequestHandler):
         
 
 application = tornado.web.Application([
-    (r"/", MainHandler),
     (r"/event", EventHandler),
 ])
 
