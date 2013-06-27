@@ -23,6 +23,11 @@ Installation
         source corgi-virtualenv/bin/activate
         pip install -r requirements.txt
 
+3. Register hook
+
+    See sample-subscribe.sh
+
+
 Startup
 -------
 
