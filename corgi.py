@@ -1,4 +1,4 @@
-import logging
+import logging, copy
 
 from redmine import Redmine
 
@@ -27,10 +27,21 @@ class RedmineAlreadyConnected(Exception):
 	def __str__(self):
 		return repr(self.value)
 
+class RedmineNotConnected(Exception):
+
+	def __init__(self, value=""):
+		self.value = value
+
+	def __str__(self):
+		return repr("Not connected to Redmine server- %s" % self.value)
 
 class Corgi:
 	"""
 	Simple interaction with a Redmine server.
+
+	By placing this in its own class, we can abstract out the underlying
+	operations and remove the dependency on pyredmine and dateutil if we
+	ever want to.
 	"""
 
 	def __init__(self, serverURL = None, authkey = None):
@@ -73,6 +84,9 @@ class Corgi:
 		else:
 			raise RedmineServerAlreadySet("Server URL has already been set.")
 
+	def getServerURL(self):
+		return copy.copy(self._serverURL)
+
 	def setAuthKey(authkey):
 		"""
 		If the authentication key is not set, will set it. Otherwise will raise
@@ -87,6 +101,9 @@ class Corgi:
 		else:
 			raise RedmineServerAlreadySet(\
 				"Authentication key already set.")
+
+	def getAuthKey(self):
+		return copy.copy(self._authKey)
 
 	def connect(self):
 		"""
@@ -108,3 +125,38 @@ class Corgi:
 			raise RedmineAlreadyConnected("Already connected to %s" % \
 				self._serverURL)
 
+	def newIssue(self, project, subject, description):
+		"""
+		Creates a new issue in project with the subject and description.
+
+		Returns the new issue's id on success.
+
+		FIXME: Would be nice if we could do more than just subject and
+		description. Need error checking.
+		"""
+		if self.connected:
+			p = self._redmine.projects['project']
+			issue = p.issues.new(subject = subject, description = description)
+			return issue.id
+		else:
+			raise RedmineNotConnected()
+
+	def updateIssue(self, issueId, update, statusId=None):
+		"""
+		Updates an existing issue denoted by issueId. The update contains
+		the comments to add. If a statusId is provided, it will be used,
+		otherwise the existing statusId will be used.
+
+		FIXME: Very 'meh' now. Need error checking. statusId assumes the
+		caller 'knows what they are doing' and will match what's in redmine-
+		a risky assumption.
+		"""
+		if self.connected:
+			issue = self._redmine.issues[issueId]
+			if statusId == None:
+				statusId = int(issue.status)
+			issue.set_status(statusId, update)
+			# XXX May want to queue these up and have a final commit?
+			issue.save()
+		else:
+			raise RedmineNotConnected()
