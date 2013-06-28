@@ -10,7 +10,6 @@ import tornado.web
 import tornado.template
 
 from corgi import Corgi
-from config import REDMINE_AUTH_KEY, REDMINE_URL, PORT
 
 
 def create_issue_update(data):
@@ -18,13 +17,16 @@ def create_issue_update(data):
     template = loader.load('updated_pull_request.textile')
     return template.generate(data=data)
 
+
 from logging import StreamHandler
 from logging.handlers import WatchedFileHandler
 
 log = logging.getLogger('server')
 
+
 # Global configuration properties
 config = None
+
 
 class EventHandler(tornado.web.RequestHandler):
 
@@ -41,7 +43,7 @@ class EventHandler(tornado.web.RequestHandler):
 
         if cases:
             logging.info("Case numbers %s" % ",".join(cases))
-            c = Corgi(REDMINE_URL, REDMINE_AUTH_KEY)
+            c = Corgi(config['redmine.url'], config['redmine.auth_key'])
             if c.connected:
                 for case in cases:
                     #c.updateIssue(case, create_issue_update(data))

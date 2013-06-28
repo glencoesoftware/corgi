@@ -14,3 +14,7 @@ server.socket_port = "9090"
 
 # Tornado Web debugging
 # debug = "yes"
+
+# Redmine API settings
+redmine.url = ""
+redmine.auth_key = ""
