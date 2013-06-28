@@ -7,12 +7,11 @@ referenced Redmine issues.
 Requirements
 ------------
 
-python-dateutil
-simplejson
-six
-tornado
-pyredminews
-configobj
+    python-dateutil
+    simplejson
+    tornado
+    pyredminews
+    configobj
 
 Installation
 ------------
@@ -32,11 +31,10 @@ Installation
 
     See sample-subscribe.sh
 
-4. Add user mappings
+4. Configure server.cfg
 
-    In server.cfg, add a mapping for each GitHub user to the corresponding Redmine user
+    Add a mapping for each GitHub user to the corresponding Redmine user
 
-Startup
--------
+    Add Redmine and Jenkins login information
 
-[todo]
+    Add repository to job mapping information
