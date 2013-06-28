@@ -7,7 +7,12 @@ referenced Redmine issues.
 Requirements
 ------------
 
-* Tornado
+python-dateutil
+simplejson
+six
+tornado
+pyredminews
+configobj
 
 Installation
 ------------
