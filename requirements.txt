@@ -1,8 +1,10 @@
-# Python installation requirements for Rollup
-# ===========================================
+# Python installation requirements for Corgi
+# ==========================================
 #
 # This file is meant to be consumed by pip
 #
 #     pip install -r requirements.txt
 #
 tornado
+python-dateutil
+pyredmine
