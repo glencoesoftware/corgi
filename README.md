@@ -32,6 +32,9 @@ Installation
 
     See sample-subscribe.sh
 
+4. Add user mappings
+
+    In server.cfg, add a mapping for each GitHub user to the corresponding Redmine user
 
 Startup
 -------

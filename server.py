@@ -36,6 +36,7 @@ class EventHandler(tornado.web.RequestHandler):
         number = pr['number']
         title = pr['title']
         body = pr['body']
+        sender = data['sender']['login']
 
         logging.info("Received event for PR %s" % number)
 
@@ -43,7 +44,8 @@ class EventHandler(tornado.web.RequestHandler):
 
         if cases:
             logging.info("Case numbers %s" % ",".join(cases))
-            c = Corgi(config['redmine.url'], config['redmine.auth_key'])
+            c = Corgi(config['redmine.url'], config['redmine.auth_key'],
+                      config.get('user.mapping.%s' % sender))
             if c.connected:
                 for case in cases:
                     #c.updateIssue(case, create_issue_update(data))

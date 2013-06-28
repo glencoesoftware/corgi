@@ -56,7 +56,7 @@ class Corgi(object):
     ever want to.
     """
 
-    def __init__(self, serverURL = None, authKey = None):
+    def __init__(self, serverURL = None, authKey = None, impersonate=None):
         """
         Constructor which takes the URL for the Redmine server and
         associated user authentication key. Will set up the instance
@@ -69,6 +69,7 @@ class Corgi(object):
         self._serverURL = None
         self._authKey = None
         self._redmine = None
+        self._impersonate = impersonate
 
         if serverURL:
             self.setServerURL(serverURL)
@@ -127,7 +128,8 @@ class Corgi(object):
         """
         if not self.connected:
             if self._serverURL is not None and self._authKey is not None:
-                self._redmine = Redmine(self._serverURL, self._authKey)
+                self._redmine = Redmine(self._serverURL, self._authKey,
+                                        impersonate=self._impersonate)
                 self.connected = True
             else:
                 raise RedmineServerUnset(\

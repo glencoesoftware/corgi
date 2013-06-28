@@ -18,3 +18,5 @@ server.socket_port = "9090"
 # Redmine API settings
 redmine.url = ""
 redmine.auth_key = ""
+
+user.mapping.git-username = "redmine-username"
