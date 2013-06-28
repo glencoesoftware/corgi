@@ -12,10 +12,19 @@ import tornado.template
 from corgi import Corgi
 
 
+def create_tree_url(data):
+    ref = data['pull_request']['head']['ref']
+    url = data['pull_request']['head']['repo']['html_url'] + "/tree/" + ref
+    return url
+
+
 def create_issue_update(data):
     loader = tornado.template.Loader(os.path.join(os.path.dirname(__file__), 'templates'))
     template = loader.load('updated_pull_request.textile')
-    return template.generate(data=data)
+    return template.generate(
+        data=data,
+        tree_url=create_tree_url(data),
+    )
 
 
 from logging import StreamHandler
