@@ -1,0 +1,3 @@
+Pull request {{ data['number'] }} was {{ data['action'] }}d by {{ data['sender']['login'] }}.
+
+{{ data['pull_request']['url'] }}

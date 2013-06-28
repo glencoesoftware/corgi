@@ -1,13 +1,21 @@
 import tornado.ioloop
 import tornado.web
+import tornado.template
 
 import simplejson
 import re
 import logging
 import sys
+import os
 
 from corgi import Corgi
 from config import REDMINE_AUTH_KEY, REDMINE_URL, PORT
+
+
+def create_issue_update(data):
+    loader = tornado.template.Loader(os.path.join(os.path.dirname(__file__), 'templates'))
+    template = loader.load('updated_pull_request.textile')
+    return template.generate(data=data)
 
 
 class EventHandler(tornado.web.RequestHandler):
@@ -18,8 +26,6 @@ class EventHandler(tornado.web.RequestHandler):
         number = pr['number']
         title = pr['title']
         body = pr['body']
-        url = pr['url']
-        sender = data['sender']['login']
 
         logging.info("Received event for PR %s" % number)
 
@@ -30,7 +36,8 @@ class EventHandler(tornado.web.RequestHandler):
             c = Corgi(REDMINE_URL, REDMINE_AUTH_KEY)
             if c.connected:
                 for case in cases:
-                    c.updateIssue(case, "PR %s was updated by %s" % (number, sender))
+                    #c.updateIssue(case, create_issue_update(data))
+                    print create_issue_update(data)
                     logging.info("Added comment to issue %s" % case)
             else:
                 logging.error("Connection to Redmine failed")
