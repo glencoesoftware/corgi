@@ -48,8 +48,7 @@ class EventHandler(tornado.web.RequestHandler):
                       config.get('user.mapping.%s' % sender))
             if c.connected:
                 for case in cases:
-                    #c.updateIssue(case, create_issue_update(data))
-                    print create_issue_update(data)
+                    c.updateIssue(case, create_issue_update(data))
                     logging.info("Added comment to issue %s" % case)
             else:
                 logging.error("Connection to Redmine failed")
