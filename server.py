@@ -1,14 +1,23 @@
-import tornado.ioloop
-import tornado.web
-
 import simplejson
-import re
 import logging
 import sys
+import re
+import os
+
+import tornado.httpserver
+import tornado.ioloop
+import tornado.web
 
 from corgi import Corgi
 from config import REDMINE_AUTH_KEY, REDMINE_URL
 
+from logging import StreamHandler
+from logging.handlers import WatchedFileHandler
+
+log = logging.getLogger('server')
+
+# Global configuration properties
+config = None
 
 class EventHandler(tornado.web.RequestHandler):
 
@@ -39,12 +48,37 @@ class EventHandler(tornado.web.RequestHandler):
 
 
 
-application = tornado.web.Application([
-    (r"/event", EventHandler),
-])
-
 if __name__ == "__main__":
-    logging.getLogger().setLevel(logging.INFO)
-    logging.info('Starting corgi server')
-    application.listen(19090)
+    # Load configuration
+    from configobj import ConfigObj
+    config = os.path.join(os.path.dirname(__file__), 'server.cfg')
+    config = ConfigObj(config, interpolation=False, file_error=True)
+    settings = {
+    }
+
+    # Set up our log level
+    try:
+        filename = config['server.logging_filename']
+        handler = WatchedFileHandler(filename)
+    except KeyError:
+        handler = StreamHandler()
+    handler.setFormatter(logging.Formatter(config['server.logging_format']))
+    root_logger = logging.getLogger('')
+    root_logger.setLevel(int(config['server.logging_level']))
+    root_logger.addHandler(handler)
+
+    if 'debug' in config:
+        log.info('Enabling Tornado Web debug mode')
+        settings['debug'] = config['debug']
+
+    host = config['server.socket_host']
+    port = int(config['server.socket_port'])
+
+    application = tornado.web.Application([
+        (r"/event", EventHandler),
+    ], **settings)
+
+    log.info('Starting corgi server http://%s:%d/' % (host, port))
+    http_server = tornado.httpserver.HTTPServer(application)
+    http_server.listen(port, host)
     tornado.ioloop.IOLoop.instance().start()
