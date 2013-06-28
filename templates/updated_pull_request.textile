@@ -1,3 +1,1 @@
-Pull request {{ data['number'] }} was {{ data['action'] }}d by {{ data['sender']['login'] }}.
-
-{{ data['pull_request']['url'] }}
+"Pull request {{ data['number'] }}":{{ data['pull_request']['html_url'] }} was {{ data['action'] }}d by {{ data['sender']['login'] }}.
