@@ -47,7 +47,7 @@ class RedmineNotConnected(Exception):
     def __str__(self):
         return repr("Not connected to Redmine server- %s" % self.value)
 
-class Corgi:
+class Corgi(object):
     """
     Simple interaction with a Redmine server.
 
