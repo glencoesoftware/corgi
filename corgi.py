@@ -14,159 +14,159 @@ from redmine import Redmine
 
 class RedmineServerUnset(Exception):
 
-	def __init__(self, value):
-		self.value = value
+    def __init__(self, value):
+        self.value = value
 
-	def __str__(self):
-		return repr("Redmine server information unset- %s" % self.value)
+    def __str__(self):
+        return repr("Redmine server information unset- %s" % self.value)
 
 class RedmineServerAlreadySet(Exception):
 
-	def __init__(self, value):
-		self.value = value
+    def __init__(self, value):
+        self.value = value
 
-	def __str__(self):
-		return repr("Redmine server information has already been set- %s" \
-			% self.value)
+    def __str__(self):
+        return repr("Redmine server information has already been set- %s" \
+            % self.value)
 
 class RedmineAlreadyConnected(Exception):
 
-	def __init__(self, value):
-		self.value = value
+    def __init__(self, value):
+        self.value = value
 
-	def __str__(self):
-		return repr(self.value)
+    def __str__(self):
+        return repr(self.value)
 
 class RedmineNotConnected(Exception):
 
-	def __init__(self, value=""):
-		self.value = value
+    def __init__(self, value=""):
+        self.value = value
 
-	def __str__(self):
-		return repr("Not connected to Redmine server- %s" % self.value)
+    def __str__(self):
+        return repr("Not connected to Redmine server- %s" % self.value)
 
 class Corgi:
-	"""
-	Simple interaction with a Redmine server.
+    """
+    Simple interaction with a Redmine server.
 
-	By placing this in its own class, we can abstract out the underlying
-	operations and remove the dependency on pyredmine and dateutil if we
-	ever want to.
-	"""
+    By placing this in its own class, we can abstract out the underlying
+    operations and remove the dependency on pyredmine and dateutil if we
+    ever want to.
+    """
 
-	def __init__(self, serverURL = None, authKey = None):
-		"""
-		Constructor which takes the URL for the Redmine server and
-		associated user authentication key. Will set up the instance
-		for future interactions.
+    def __init__(self, serverURL = None, authKey = None):
+        """
+        Constructor which takes the URL for the Redmine server and
+        associated user authentication key. Will set up the instance
+        for future interactions.
 
-		If serverURL or authKey are omitted, no connection will be
-		established, and you will have to call connect() yourself.
-		"""
-		self.logger = logging.getLogger('Corgi')
-		self.connected = False
-		self._serverURL = None
-		self._authKey = None
-		self._redmine = None
+        If serverURL or authKey are omitted, no connection will be
+        established, and you will have to call connect() yourself.
+        """
+        self.logger = logging.getLogger('Corgi')
+        self.connected = False
+        self._serverURL = None
+        self._authKey = None
+        self._redmine = None
 
-		if serverURL:
-			self.setServerURL(serverURL)
+        if serverURL:
+            self.setServerURL(serverURL)
 
-		if authKey:
-			self.setAuthKey(authKey)
+        if authKey:
+            self.setAuthKey(authKey)
 
-		try:
-			self.connect()
-		except RedmineServerUnset:
-			self.logger.info('Not connected to Redmine.')
+        try:
+            self.connect()
+        except RedmineServerUnset:
+            self.logger.info('Not connected to Redmine.')
 
-	def setServerURL(self, serverURL):
-		"""
-		If serverURL is not set, will set it. Otherwise will raise the
-		RedmineServerAlreadySet exception.
+    def setServerURL(self, serverURL):
+        """
+        If serverURL is not set, will set it. Otherwise will raise the
+        RedmineServerAlreadySet exception.
 
-		If you wish to connect to a different server, do not attempt to
-		change the serverURL. Instead, create a new instance of the Corgi
-		class.
-		"""
-		if self._serverURL == None:
-			self._serverURL = str(serverURL)
-		else:
-			raise RedmineServerAlreadySet("Server URL has already been set.")
+        If you wish to connect to a different server, do not attempt to
+        change the serverURL. Instead, create a new instance of the Corgi
+        class.
+        """
+        if self._serverURL == None:
+            self._serverURL = str(serverURL)
+        else:
+            raise RedmineServerAlreadySet("Server URL has already been set.")
 
-	def getServerURL(self):
-		return copy.copy(self._serverURL)
+    def getServerURL(self):
+        return copy.copy(self._serverURL)
 
-	def setAuthKey(self, authkey):
-		"""
-		If the authentication key is not set, will set it. Otherwise will raise
-		the RedmineServerAlreadySet exception.
+    def setAuthKey(self, authkey):
+        """
+        If the authentication key is not set, will set it. Otherwise will raise
+        the RedmineServerAlreadySet exception.
 
-		If you wish to change the authentication key, do not attempt to call
-		this method again. Instead, delete the old instance of Corgi and make
-		a new one.
-		"""
-		if self._authKey == None:
-			self._authKey = str(authkey)
-		else:
-			raise RedmineServerAlreadySet(\
-				"Authentication key already set.")
+        If you wish to change the authentication key, do not attempt to call
+        this method again. Instead, delete the old instance of Corgi and make
+        a new one.
+        """
+        if self._authKey == None:
+            self._authKey = str(authkey)
+        else:
+            raise RedmineServerAlreadySet(\
+                "Authentication key already set.")
 
-	def getAuthKey(self):
-		return copy.copy(self._authKey)
+    def getAuthKey(self):
+        return copy.copy(self._authKey)
 
-	def connect(self):
-		"""
-		If not connected, will attempt to connect with the Redmine server. If
-		we are already connected, will raise the RedmineAlreadyConnected
-		exception.
+    def connect(self):
+        """
+        If not connected, will attempt to connect with the Redmine server. If
+        we are already connected, will raise the RedmineAlreadyConnected
+        exception.
 
-		If the server information has not been set, will raise the
-		RedmineServerUnset exception.
-		"""
-		if not self.connected:
-			if self._serverURL != None and self._authKey != None:
-				self._redmine = Redmine(self._serverURL, self._authKey)
-				self.connected = True
-			else:
-				raise RedmineServerUnset(\
-					'Please set server URL and authentication key.')
-		else:
-			raise RedmineAlreadyConnected("Already connected to %s" % \
-				self._serverURL)
+        If the server information has not been set, will raise the
+        RedmineServerUnset exception.
+        """
+        if not self.connected:
+            if self._serverURL != None and self._authKey != None:
+                self._redmine = Redmine(self._serverURL, self._authKey)
+                self.connected = True
+            else:
+                raise RedmineServerUnset(\
+                    'Please set server URL and authentication key.')
+        else:
+            raise RedmineAlreadyConnected("Already connected to %s" % \
+                self._serverURL)
 
-	def newIssue(self, project, subject, description):
-		"""
-		Creates a new issue in project with the subject and description.
+    def newIssue(self, project, subject, description):
+        """
+        Creates a new issue in project with the subject and description.
 
-		Returns the new issue's id on success.
+        Returns the new issue's id on success.
 
-		FIXME: Would be nice if we could do more than just subject and
-		description. Need error checking.
-		"""
-		if self.connected:
-			p = self._redmine.projects['project']
-			issue = p.issues.new(subject = subject, description = description)
-			return issue.id
-		else:
-			raise RedmineNotConnected()
+        FIXME: Would be nice if we could do more than just subject and
+        description. Need error checking.
+        """
+        if self.connected:
+            p = self._redmine.projects['project']
+            issue = p.issues.new(subject = subject, description = description)
+            return issue.id
+        else:
+            raise RedmineNotConnected()
 
-	def updateIssue(self, issueId, update, statusId=None):
-		"""
-		Updates an existing issue denoted by issueId. The update contains
-		the comments to add. If a statusId is provided, it will be used,
-		otherwise the existing statusId will be used.
+    def updateIssue(self, issueId, update, statusId=None):
+        """
+        Updates an existing issue denoted by issueId. The update contains
+        the comments to add. If a statusId is provided, it will be used,
+        otherwise the existing statusId will be used.
 
-		FIXME: Very 'meh' now. Need error checking. statusId assumes the
-		caller 'knows what they are doing' and will match what's in redmine-
-		a risky assumption.
-		"""
-		if self.connected:
-			issue = self._redmine.issues[issueId]
-			if statusId == None:
-				statusId = int(issue.status)
-			issue.set_status(statusId, update)
-			# XXX May want to queue these up and have a final commit?
-			issue.save()
-		else:
-			raise RedmineNotConnected()
+        FIXME: Very 'meh' now. Need error checking. statusId assumes the
+        caller 'knows what they are doing' and will match what's in redmine-
+        a risky assumption.
+        """
+        if self.connected:
+            issue = self._redmine.issues[issueId]
+            if statusId == None:
+                statusId = int(issue.status)
+            issue.set_status(statusId, update)
+            # XXX May want to queue these up and have a final commit?
+            issue.save()
+        else:
+            raise RedmineNotConnected()
