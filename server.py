@@ -9,7 +9,18 @@ import tornado.ioloop
 import tornado.web
 import tornado.template
 
+from jenkinsapi.jenkins import Jenkins
+
 from corgi import Corgi
+
+from logging import StreamHandler
+from logging.handlers import WatchedFileHandler
+
+log = logging.getLogger('server')
+
+
+# Global configuration properties
+config = None
 
 
 def create_tree_url(data):
@@ -27,14 +38,30 @@ def create_issue_update(data):
     )
 
 
-from logging import StreamHandler
-from logging.handlers import WatchedFileHandler
+def update_redmine_issues(issues, data):
+    logging.info("Updating Redmine issues %s" % ", ".join(issues))
+    c = Corgi(config['redmine.url'], config['redmine.auth_key'],
+              config.get('user.mapping.%s' % data['sender']['login']))
+    if c.connected:
+        for issue in issues:
+            if not config.get('dry-run'):
+                c.updateIssue(issue, create_issue_update(data))
+            logging.info("Added comment to issue %s" % issue)
+    else:
+        logging.error("Connection to Redmine failed")
 
-log = logging.getLogger('server')
 
-
-# Global configuration properties
-config = None
+def run_jenkins_job(job):
+    jenkins = Jenkins(config['jenkins.url'],
+                      username=config['jenkins.username'],
+                      password=config['jenkins.password'])
+    if job in jenkins:
+        logging.debug('Invoking Jenkins job %s' % job)
+        if not config.get('dry-run'):
+            jenkins[job].invoke()
+    else:
+        logging.error('Jenkins job %s not found' % job)
+        logging.debug('Available Jenkins jobs: %s' % ', ' % jenkins.keys())
 
 
 class EventHandler(tornado.web.RequestHandler):
@@ -45,25 +72,28 @@ class EventHandler(tornado.web.RequestHandler):
         number = pr['number']
         title = pr['title']
         body = pr['body']
-        sender = data['sender']['login']
 
         logging.info("Received event for PR %s" % number)
 
-        cases = set(re.findall(r'\bgs-(\d+)', title + ' ' + body))
-
-        if cases:
-            logging.info("Case numbers %s" % ",".join(cases))
-            c = Corgi(config['redmine.url'], config['redmine.auth_key'],
-                      config.get('user.mapping.%s' % sender))
-            if c.connected:
-                for case in cases:
-                    c.updateIssue(case, create_issue_update(data))
-                    logging.info("Added comment to issue %s" % case)
-            else:
-                logging.error("Connection to Redmine failed")
+        # Update Redmine issues
+        issues = set(re.findall(r'\bgs-(\d+)', title + ' ' + body))
+        if issues:
+            update_redmine_issues(issues, data)
         else:
-            logging.info("No case numbers found")
+            logging.info("No issue numbers found")
 
+        # Trigger jenkins jobs
+        jobs = config.get('repository.mapping.%s' % 
+                data['repository']['full_name'].replace('/', '.')
+        )
+        if jobs:
+            if isinstance(jobs, list):
+                for job in jobs:
+                    run_jenkins_job(job)
+            else:
+                run_jenkins_job(jobs)
+        else:
+            logging.info("No Jenkins job mappings found")
 
 
 if __name__ == "__main__":

@@ -17,8 +17,18 @@ server.socket_port = "9090"
 
 # Don't actually do anything
 # dry-run = "yes"
+
 # Redmine API settings
 redmine.url = ""
 redmine.auth_key = ""
 
+# Jenkins API settings
+jenkins.url = ""
+jenkins.username = ""
+jenkins.password = ""
+
+# Git users to Redmine users mappings
 user.mapping.git-username = "redmine-username"
+
+# Git repository to Jenkins job mappings
+repository.mapping.git-user.git-repo = "jenkins-job-1", "jenkins-job-2"
