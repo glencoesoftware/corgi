@@ -90,7 +90,7 @@ class Corgi(object):
         change the serverURL. Instead, create a new instance of the Corgi
         class.
         """
-        if self._serverURL == None:
+        if self._serverURL is None:
             self._serverURL = str(serverURL)
         else:
             raise RedmineServerAlreadySet("Server URL has already been set.")
@@ -107,7 +107,7 @@ class Corgi(object):
         this method again. Instead, delete the old instance of Corgi and make
         a new one.
         """
-        if self._authKey == None:
+        if self._authKey is None:
             self._authKey = str(authkey)
         else:
             raise RedmineServerAlreadySet(\
@@ -126,7 +126,7 @@ class Corgi(object):
         RedmineServerUnset exception.
         """
         if not self.connected:
-            if self._serverURL != None and self._authKey != None:
+            if self._serverURL is not None and self._authKey is not None:
                 self._redmine = Redmine(self._serverURL, self._authKey)
                 self.connected = True
             else:
@@ -164,7 +164,7 @@ class Corgi(object):
         """
         if self.connected:
             issue = self._redmine.issues[issueId]
-            if statusId == None:
+            if statusId is None:
                 statusId = int(issue.status)
             issue.set_status(statusId, update)
             # XXX May want to queue these up and have a final commit?
