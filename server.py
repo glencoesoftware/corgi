@@ -96,6 +96,9 @@ if __name__ == "__main__":
         (r"/event", EventHandler),
     ], **settings)
 
+    if config.get('dry-run'):
+        log.info('In dry-run mode')
+
     log.info('Starting corgi server http://%s:%d/' % (host, port))
     http_server = tornado.httpserver.HTTPServer(application)
     http_server.listen(port, host)
