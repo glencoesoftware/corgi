@@ -1,0 +1,2 @@
+REDMINE_URL = ""
+REDMINE_AUTH_KEY = ""
