@@ -7,7 +7,7 @@ import logging
 import sys
 
 from corgi import Corgi
-from config import REDMINE_AUTH_KEY, REDMINE_URL
+from config import REDMINE_AUTH_KEY, REDMINE_URL, PORT
 
 
 class EventHandler(tornado.web.RequestHandler):
@@ -46,5 +46,5 @@ application = tornado.web.Application([
 if __name__ == "__main__":
     logging.getLogger().setLevel(logging.INFO)
     logging.info('Starting corgi server')
-    application.listen(19090)
+    application.listen(PORT)
     tornado.ioloop.IOLoop.instance().start()
