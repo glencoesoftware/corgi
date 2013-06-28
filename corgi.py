@@ -12,6 +12,8 @@ import logging, copy
 
 from redmine import Redmine
 
+logger = logging.getLogger('corgi')
+
 class RedmineServerUnset(Exception):
 
     def __init__(self, value):
@@ -63,7 +65,6 @@ class Corgi:
         If serverURL or authKey are omitted, no connection will be
         established, and you will have to call connect() yourself.
         """
-        self.logger = logging.getLogger('Corgi')
         self.connected = False
         self._serverURL = None
         self._authKey = None
@@ -78,7 +79,7 @@ class Corgi:
         try:
             self.connect()
         except RedmineServerUnset:
-            self.logger.info('Not connected to Redmine.')
+            logger.info('Not connected to Redmine.')
 
     def setServerURL(self, serverURL):
         """
