@@ -1,0 +1,16 @@
+# Logging configuration
+# 50 CRITICAL
+# 40 ERROR
+# 30 WARNING
+# 20 INFO
+# 10 DEBUG
+# 0  NOTSET
+server.logging_level = "10"
+#server.logging_filename = "/var/log/server.log"
+server.logging_format = "%(asctime)s %(levelname)-7s [%(name)16s] %(message)s"
+
+server.socket_host = "0.0.0.0"
+server.socket_port = "9090"
+
+# Tornado Web debugging
+# debug = "yes"
