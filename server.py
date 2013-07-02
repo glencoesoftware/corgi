@@ -12,6 +12,7 @@ import tornado.template
 from jenkinsapi.jenkins import Jenkins
 
 from corgi import Corgi
+from corgit import update_pr_description
 
 from logging import StreamHandler
 from logging.handlers import WatchedFileHandler
@@ -51,6 +52,11 @@ def update_redmine_issues(issues, data):
         logging.error("Connection to Redmine failed")
 
 
+def update_pull_request(data):
+    update_pr_description(data['repository']['full_name'],
+                          data['pull_request']['number'])
+
+
 def run_jenkins_job(job):
     jenkins = Jenkins(config['jenkins.url'],
                       username=config['jenkins.username'],
@@ -81,6 +87,9 @@ class EventHandler(tornado.web.RequestHandler):
             update_redmine_issues(issues, data)
         else:
             logging.info("No issue numbers found")
+
+        # Update PR description
+        update_pull_request(data)
 
         # Trigger jenkins jobs
         jobs = config.get('repository.mapping.%s' % 
