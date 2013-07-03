@@ -31,11 +31,18 @@ def create_tree_url(data):
 
 
 def create_issue_update(data):
+
+    def make_past_tense(verb):
+        if not verb.endswith('d'):
+            return verb + 'd'
+        return verb
+
     loader = tornado.template.Loader(os.path.join(os.path.dirname(__file__), 'templates'))
     template = loader.load('updated_pull_request.textile')
     return template.generate(
         data=data,
         tree_url=create_tree_url(data),
+        make_past_tense=make_past_tense,
     )
 
 
@@ -46,7 +53,8 @@ def update_redmine_issues(issues, data):
     if c.connected:
         for issue in issues:
             if not config.get('dry-run'):
-                c.updateIssue(issue, create_issue_update(data))
+                status = config.get('redmine.status.on-pr-%s' % data['action'])
+                c.updateIssue(issue, create_issue_update(data), status)
             logging.info("Added comment to issue %s" % issue)
     else:
         logging.error("Connection to Redmine failed")
@@ -105,14 +113,16 @@ class EventHandler(tornado.web.RequestHandler):
             logging.info("No Jenkins job mappings found")
 
 
-if __name__ == "__main__":
+def load_config():
     # Load configuration
     from configobj import ConfigObj
-    config = os.path.join(os.path.dirname(__file__), 'server.cfg')
-    config = ConfigObj(config, interpolation=False, file_error=True)
-    settings = {
-    }
+    global config
+    configfile = os.path.join(os.path.dirname(__file__), 'server.cfg')
+    config = ConfigObj(configfile, interpolation=False, file_error=True)
 
+
+if __name__ == "__main__":
+    load_config()
     # Set up our log level
     try:
         filename = config['server.logging_filename']
@@ -123,6 +133,9 @@ if __name__ == "__main__":
     root_logger = logging.getLogger('')
     root_logger.setLevel(int(config['server.logging_level']))
     root_logger.addHandler(handler)
+
+    settings = {
+    }
 
     if 'debug' in config:
         log.info('Enabling Tornado Web debug mode')
