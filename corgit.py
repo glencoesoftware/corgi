@@ -3,6 +3,8 @@ import re
 import sys
 import github
 
+from config import config
+
 import logging
 from logging import StreamHandler
 from logging.handlers import WatchedFileHandler
@@ -10,30 +12,29 @@ from logging.handlers import WatchedFileHandler
 log = logging.getLogger('corgit')
 
 
-# Global configuration properties
-config = None
-
-
 HEADER = '### Referenced Issues:'
 
-def update_pr_description(repo_name, pr_number):
 
-    log.info('Updating PR description for %s PR %s' % (repo_name, pr_number))
-
+def get_pullrequest(repo_name, pr_number):
     gh = github.Github(config['git.token'])
     repo = gh.get_repo(repo_name)
-    pr = repo.get_pull(pr_number)
+    return repo.get_pull(pr_number)
 
-    title = pr.title
-    body = pr.body
 
-    issues = set(re.findall(r'\bgs-(\d+)', title + ' ' + body))
+def get_issues_from_pr(pullrequest):
+    text = [pullrequest.title, pullrequest.body]
+    for commit in pullrequest.get_commits():
+        text.append(commit.commit.message)
+    return sorted(set(map(int, re.findall(r'\bgs-(\d+)', ' '.join(text)))))
 
+
+def update_pr_description(pullrequest, dryrun=False):
+    log.info('Updating PR description for %s PR %s' % (pullrequest.base.repo.full_name, pullrequest.number))
+    body = pullrequest.body
+    issues = get_issues_from_pr(pullrequest)
     links = '\n'.join('* [Issue %s](%sissues/%s)' % (issue, config['redmine.url'], issue)
                       for issue in issues)
-
     lines = [line.strip() for line in body.split('\n')]
-
     if HEADER in lines:
         log.info('Found existing list of issues, updating')
         # update existing list
@@ -54,17 +55,15 @@ def update_pr_description(repo_name, pr_number):
 
     if updated_body != body:
         log.info('Committing new body')
-        pr.edit(body=updated_body)
+        if not dryrun:
+            pullrequest.edit(body=updated_body)
     else:
         log.info('Body unchanged, skipping commit')
 
+    return updated_body
+
 
 if __name__ == "__main__":
-    # Load configuration
-    from configobj import ConfigObj
-    config = os.path.join(os.path.dirname(__file__), 'server.cfg')
-    config = ConfigObj(config, interpolation=False, file_error=True)
-
     # Set up our log level
     try:
         filename = config['server.logging_filename']

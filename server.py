@@ -12,16 +12,13 @@ import tornado.template
 from jenkinsapi.jenkins import Jenkins
 
 from corgi import Corgi
-from corgit import update_pr_description
+from corgit import update_pr_description, get_issues_from_pr, get_pullrequest
+from config import config
 
 from logging import StreamHandler
 from logging.handlers import WatchedFileHandler
 
 log = logging.getLogger('server')
-
-
-# Global configuration properties
-config = None
 
 
 def create_tree_url(data):
@@ -46,8 +43,13 @@ def create_issue_update(data):
     )
 
 
-def update_redmine_issues(issues, data):
-    logging.info("Updating Redmine issues %s" % ", ".join(issues))
+def update_redmine_issues(pullrequest, data):
+    issues = get_issues_from_pr(pullrequest)
+    if not issues:
+        logging.info("No issues found")
+        return
+
+    logging.info("Updating Redmine issues %s" % ", ".join(map(str, issues)))
     c = Corgi(config['redmine.url'], config['redmine.auth_key'],
               config.get('user.mapping.%s' % data['sender']['login']))
     if c.connected:
@@ -58,11 +60,6 @@ def update_redmine_issues(issues, data):
             logging.info("Added comment to issue %s" % issue)
     else:
         logging.error("Connection to Redmine failed")
-
-
-def update_pull_request(data):
-    update_pr_description(data['repository']['full_name'],
-                          data['pull_request']['number'])
 
 
 def run_jenkins_job(job):
@@ -82,25 +79,18 @@ class EventHandler(tornado.web.RequestHandler):
 
     def post(self):
         data = simplejson.loads(self.request.body)
-        pr = data['pull_request']
-        number = pr['number']
-        title = pr['title']
-        body = pr['body']
-
-        logging.info("Received event for PR %s" % number)
+        logging.info("Received event for PR %s" % data['pull_request']['number'])
+        pullrequest = get_pullrequest(data['repository']['full_name'],
+                          data['pull_request']['number'])
 
         # Update Redmine issues
-        issues = set(re.findall(r'\bgs-(\d+)', title + ' ' + body))
-        if issues:
-            update_redmine_issues(issues, data)
-        else:
-            logging.info("No issue numbers found")
+        update_redmine_issues(pullrequest, data)
 
         # Update PR description
-        update_pull_request(data)
+        update_pr_description(pullrequest)
 
         # Trigger jenkins jobs
-        jobs = config.get('repository.mapping.%s' % 
+        jobs = config.get('repository.mapping.%s' %
                 data['repository']['full_name'].replace('/', '.')
         )
         if jobs:
@@ -113,16 +103,7 @@ class EventHandler(tornado.web.RequestHandler):
             logging.info("No Jenkins job mappings found")
 
 
-def load_config():
-    # Load configuration
-    from configobj import ConfigObj
-    global config
-    configfile = os.path.join(os.path.dirname(__file__), 'server.cfg')
-    config = ConfigObj(configfile, interpolation=False, file_error=True)
-
-
 if __name__ == "__main__":
-    load_config()
     # Set up our log level
     try:
         filename = config['server.logging_filename']
