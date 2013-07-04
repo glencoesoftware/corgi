@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
 
 """
 
@@ -17,7 +18,7 @@ import sys
 if len(sys.argv) != 4:
 	# So stupid that we dont even use parser!
 	print "Simple test for Corgi\n"
-	
+
 	print "Usage:"
 	print "  test.py URL AUTHKEY ISSUE_ID\n"
 	print "Where:"

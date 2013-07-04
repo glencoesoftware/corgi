@@ -1,9 +1,11 @@
+# -*- coding: utf-8 -*-
+
 """
 
 :author: Sam Hart <sam@glencoesoftware.com>
 
 Glue between Github issues and Redmine
-Copyright (c) 2007, Glencoe Software, Inc.
+Copyright (c) 2013, Glencoe Software, Inc.
 See LICENSE for details.
 
 """

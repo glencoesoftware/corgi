@@ -1,3 +1,12 @@
+# -*- coding: utf-8 -*-
+
+"""
+
+Copyright (c) 2013, Glencoe Software, Inc.
+See LICENSE for details.
+
+"""
+
 import simplejson
 import logging
 import sys
@@ -83,7 +92,7 @@ class EventHandler(tornado.web.RequestHandler):
             logging.info("No issue numbers found")
 
         # Trigger jenkins jobs
-        jobs = config.get('repository.mapping.%s' % 
+        jobs = config.get('repository.mapping.%s' %
                 data['repository']['full_name'].replace('/', '.')
         )
         if jobs:
