@@ -5,7 +5,7 @@
 :author: Sam Hart <sam@glencoesoftware.com>
 
 Glue between Github issues and Redmine
-Copyright (C) 2013 Glencoe Software
+Copyright (C) 2013 Glencoe Software, Inc.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
