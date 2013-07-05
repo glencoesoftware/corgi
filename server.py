@@ -11,8 +11,10 @@ import tornado.template
 
 from jenkinsapi.jenkins import Jenkins
 
+import github
+
 from corgi import Corgi
-from corgit import update_pr_description
+from config import config
 
 from logging import StreamHandler
 from logging.handlers import WatchedFileHandler
@@ -20,8 +22,7 @@ from logging.handlers import WatchedFileHandler
 log = logging.getLogger('server')
 
 
-# Global configuration properties
-config = None
+HEADER = '### Referenced Issues:'
 
 
 def create_tree_url(data):
@@ -31,30 +32,38 @@ def create_tree_url(data):
 
 
 def create_issue_update(data):
+
+    def make_past_tense(verb):
+        if not verb.endswith('d'):
+            return verb + 'd'
+        return verb
+
     loader = tornado.template.Loader(os.path.join(os.path.dirname(__file__), 'templates'))
     template = loader.load('updated_pull_request.textile')
     return template.generate(
         data=data,
         tree_url=create_tree_url(data),
+        make_past_tense=make_past_tense,
     )
 
 
-def update_redmine_issues(issues, data):
-    logging.info("Updating Redmine issues %s" % ", ".join(issues))
+def update_redmine_issues(pullrequest, data):
+    issues = get_issues_from_pr(pullrequest)
+    if not issues:
+        logging.info("No issues found")
+        return
+
+    logging.info("Updating Redmine issues %s" % ", ".join(map(str, issues)))
     c = Corgi(config['redmine.url'], config['redmine.auth_key'],
               config.get('user.mapping.%s' % data['sender']['login']))
     if c.connected:
         for issue in issues:
             if not config.get('dry-run'):
-                c.updateIssue(issue, create_issue_update(data))
+                status = config.get('redmine.status.on-pr-%s' % data['action'])
+                c.updateIssue(issue, create_issue_update(data), status)
             logging.info("Added comment to issue %s" % issue)
     else:
         logging.error("Connection to Redmine failed")
-
-
-def update_pull_request(data):
-    update_pr_description(data['repository']['full_name'],
-                          data['pull_request']['number'])
 
 
 def run_jenkins_job(job):
@@ -70,29 +79,80 @@ def run_jenkins_job(job):
         logging.debug('Available Jenkins jobs: %s' % ', ' % jenkins.keys())
 
 
+def get_pullrequest(repo_name, pr_number):
+    gh = github.Github(config['git.token'])
+    repo = gh.get_repo(repo_name)
+    return repo.get_pull(pr_number)
+
+
+def get_issues_from_pr(pullrequest):
+    text = [pullrequest.title, pullrequest.body]
+    for commit in pullrequest.get_commits():
+        text.append(commit.commit.message)
+    return sorted(set(map(int, re.findall(r'\bgs-(\d+)', ' '.join(text)))))
+
+
+def get_issue_titles(issues):
+    corgi = Corgi(config['redmine.url'], config['redmine.auth_key'])
+    titles = dict()
+    if corgi.connected:
+        for issue in issues:
+            titles[issue] = corgi.getIssueTitle(issue)
+    return titles
+
+
+def update_pr_description(pullrequest, dryrun=False):
+    log.info('Updating PR description for %s PR %s' % (pullrequest.base.repo.full_name, pullrequest.number))
+    body = pullrequest.body
+    issues = get_issues_from_pr(pullrequest)
+    titles = get_issue_titles(issues)
+    links = '\n'.join('* [Issue %s: %s](%sissues/%s)' % (issue, titles[issue], config['redmine.url'], issue)
+                      for issue in issues)
+    lines = [line.strip() for line in body.split('\n')]
+    if HEADER in lines:
+        log.info('Found existing list of issues, updating')
+        # update existing list
+        pos = lines.index(HEADER) + 1
+        while pos < len(lines) and lines[pos].startswith('* '):
+            del lines[pos]
+        if links:
+            lines.insert(pos, links)
+        else:
+            log.info('Removing existing list of issues')
+            del lines[pos - 1]
+    elif links:
+        log.info('No existing list of issues found, creating')
+        lines.append(HEADER)
+        lines.append(links)
+
+    updated_body = '\n'.join(lines)
+
+    if updated_body != body:
+        log.info('Committing new body')
+        if not dryrun:
+            pullrequest.edit(body=updated_body)
+    else:
+        log.info('Body unchanged, skipping commit')
+
+    return updated_body
+
+
 class EventHandler(tornado.web.RequestHandler):
 
     def post(self):
         data = simplejson.loads(self.request.body)
-        pr = data['pull_request']
-        number = pr['number']
-        title = pr['title']
-        body = pr['body']
-
-        logging.info("Received event for PR %s" % number)
+        logging.info("Received event for PR %s" % data['pull_request']['number'])
+        pullrequest = get_pullrequest(data['repository']['full_name'],
+                          data['pull_request']['number'])
 
         # Update Redmine issues
-        issues = set(re.findall(r'\bgs-(\d+)', title + ' ' + body))
-        if issues:
-            update_redmine_issues(issues, data)
-        else:
-            logging.info("No issue numbers found")
+        update_redmine_issues(pullrequest, data)
 
         # Update PR description
-        update_pull_request(data)
+        update_pr_description(pullrequest)
 
         # Trigger jenkins jobs
-        jobs = config.get('repository.mapping.%s' % 
+        jobs = config.get('repository.mapping.%s' %
                 data['repository']['full_name'].replace('/', '.')
         )
         if jobs:
@@ -106,13 +166,6 @@ class EventHandler(tornado.web.RequestHandler):
 
 
 if __name__ == "__main__":
-    # Load configuration
-    from configobj import ConfigObj
-    config = os.path.join(os.path.dirname(__file__), 'server.cfg')
-    config = ConfigObj(config, interpolation=False, file_error=True)
-    settings = {
-    }
-
     # Set up our log level
     try:
         filename = config['server.logging_filename']
@@ -123,6 +176,9 @@ if __name__ == "__main__":
     root_logger = logging.getLogger('')
     root_logger.setLevel(int(config['server.logging_level']))
     root_logger.addHandler(handler)
+
+    settings = {
+    }
 
     if 'debug' in config:
         log.info('Enabling Tornado Web debug mode')
