@@ -12,3 +12,4 @@ tornado==3.1
 git+git://github.com/knabar/pyredminews.git@user-impersonation#egg=pyredminews
 configobj==4.7.2
 jenkinsapi==0.2.8
+PyGithub==1.16.0

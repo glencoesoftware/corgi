@@ -175,3 +175,13 @@ class Corgi(object):
             issue.save()
         else:
             raise RedmineNotConnected()
+
+    def getIssueTitle(self, issueId):
+        """
+        Retrieve the title for a given issue
+        """
+        if self.connected:
+            issue = self._redmine.issues[issueId]
+            return issue.subject
+        else:
+            raise RedmineNotConnected()

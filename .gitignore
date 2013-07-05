@@ -3,4 +3,6 @@ include/
 lib/
 lib64
 server.cfg
+.Python
+*.komodoproject
 *.pyc
