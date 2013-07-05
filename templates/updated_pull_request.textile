@@ -1,1 +1,1 @@
-"Pull request {{ data['number'] }}":{{ data['pull_request']['html_url'] }} ("branch {{ data['pull_request']['head']['ref'] }}":{{ tree_url }}) was {{ make_past_tense(data['action']) }} by {{ data['sender']['login'] }}.
+"Pull request {{ data['number'] }}":{{ data['pull_request']['html_url'] }} ("branch {{ data['pull_request']['head']['ref'] }}":{{ tree_url }}) was {{ make_past_tense(data['action']) }} by {{ data['sender']['login'] }}:{{ data['sender']['html_url'] }}.
