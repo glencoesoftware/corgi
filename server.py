@@ -88,6 +88,8 @@ def update_redmine_issues(pullrequest, data):
     if c.connected:
         for issue in issues:
             if not config.get('dry-run'):
+                if data['action'] == 'closed' and data['pull_request']['merged']:
+                    data['action'] = 'merged'
                 status = config.get('redmine.status.on-pr-%s' % data['action'])
                 c.updateIssue(issue, create_issue_update(data), status)
             logging.info("Added comment to issue %s" % issue)

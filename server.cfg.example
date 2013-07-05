@@ -22,8 +22,10 @@ server.socket_port = "9090"
 redmine.url = ""
 redmine.auth_key = ""
 redmine.status.on-pr-opened = 2
+redmine.status.on-pr-reopened = 2
 redmine.status.on-pr-synchronize = 2
-redmine.status.on-pr-closed = 3
+redmine.status.on-pr-closed = 2
+redmine.status.on-pr-merged = 3
 
 # Jenkins API settings
 jenkins.url = ""
