@@ -167,17 +167,6 @@ def update_pr_description(pullrequest, dryrun=False):
 
     return updated_body
 
-def process_jobs(jobs):
-    if jobs:
-        is isinstance(jobs, list):
-            for job in jobs:
-                run_jenkins_job(job)
-        else:
-            run_jenkins_job(jobs)
-        return True
-    else:
-        return False
-
 class EventHandler(tornado.web.RequestHandler):
 
     def post(self):
@@ -196,17 +185,11 @@ class EventHandler(tornado.web.RequestHandler):
         jobs = config.get('repository.mapping.%s' %
                 data['repository']['full_name'].replace('/', '.')
         )
-        jobs_processed = False
-        if not process_jobs(jobs):
-            jobs = config.get('repository.mapping.%s' %
-                    data['repository']['full_name'].replace('/', '.')
+        if config.get['base']['ref'] != 'master':
+            jobs = config.get('repository.mapping.%s:%s' %
+                (data['repository']['full_name'].replace('/', '.'),
+                (data['base']['ref']))
             )
-            jobs_processed = process_jobs(jobs)
-        else:
-            jobs_prcoessed = True
-
-        if not jobs_processed:
-            logging.info("No Jenkins job mappings found")
 
         if jobs:
             if isinstance(jobs, list):
