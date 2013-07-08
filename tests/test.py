@@ -57,5 +57,5 @@ else:
 		print "==="
 		print "Please enter text to add to the issue as a comment:"
 		text = raw_input("-> ")
-		c.updateIssue(issueid, text)
+		c.update_issue(issueid, text)
 		print "\nCheck that the comment has been added..."

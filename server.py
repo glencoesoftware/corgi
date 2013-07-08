@@ -91,7 +91,7 @@ def update_redmine_issues(pullrequest, data):
                 if data['action'] == 'closed' and data['pull_request']['merged']:
                     data['action'] = 'merged'
                 status = config.get('redmine.status.on-pr-%s' % data['action'])
-                c.updateIssue(issue, create_issue_update(data), status)
+                c.update_issue(issue, create_issue_update(data), status)
             logging.info("Added comment to issue %s" % issue)
     else:
         logging.error("Connection to Redmine failed")
@@ -128,7 +128,7 @@ def get_issue_titles(issues):
     titles = dict()
     if corgi.connected:
         for issue in issues:
-            titles[issue] = corgi.getIssueTitle(issue)
+            titles[issue] = corgi.get_issue_title(issue)
     return titles
 
 
