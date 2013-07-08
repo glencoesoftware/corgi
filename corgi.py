@@ -94,17 +94,17 @@ class Corgi(object):
         self._impersonate = impersonate
 
         if serverURL:
-            self.setServerURL(serverURL)
+            self.set_server_url(serverURL)
 
         if authKey:
-            self.setAuthKey(authKey)
+            self.set_auth_key(authKey)
 
         try:
             self.connect()
         except RedmineServerUnset:
             logger.info('Not connected to Redmine.')
 
-    def setServerURL(self, serverURL):
+    def set_server_url(self, serverURL):
         """
         If serverURL is not set, will set it. Otherwise will raise the
         RedmineServerAlreadySet exception.
@@ -118,10 +118,10 @@ class Corgi(object):
         else:
             raise RedmineServerAlreadySet("Server URL has already been set.")
 
-    def getServerURL(self):
+    def get_server_url(self):
         return copy.copy(self._serverURL)
 
-    def setAuthKey(self, authkey):
+    def set_auth_key(self, authkey):
         """
         If the authentication key is not set, will set it. Otherwise will raise
         the RedmineServerAlreadySet exception.
@@ -136,7 +136,7 @@ class Corgi(object):
             raise RedmineServerAlreadySet(\
                 "Authentication key already set.")
 
-    def getAuthKey(self):
+    def get_auth_key(self):
         return copy.copy(self._authKey)
 
     def connect(self):
@@ -160,7 +160,7 @@ class Corgi(object):
             raise RedmineAlreadyConnected("Already connected to %s" % \
                 self._serverURL)
 
-    def newIssue(self, project, subject, description):
+    def new_issue(self, project, subject, description):
         """
         Creates a new issue in project with the subject and description.
 
@@ -176,7 +176,7 @@ class Corgi(object):
         else:
             raise RedmineNotConnected()
 
-    def updateIssue(self, issueId, update, statusId=None):
+    def update_issue(self, issueId, update, statusId=None):
         """
         Updates an existing issue denoted by issueId. The update contains
         the comments to add. If a statusId is provided, it will be used,
@@ -196,7 +196,7 @@ class Corgi(object):
         else:
             raise RedmineNotConnected()
 
-    def getIssueTitle(self, issueId):
+    def get_issue_title(self, issueId):
         """
         Retrieve the title for a given issue
         """

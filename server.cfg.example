@@ -39,4 +39,5 @@ git.token = ""
 user.mapping.git-username = "redmine-username"
 
 # Git repository to Jenkins job mappings
-repository.mapping.git-user.git-repo = "jenkins-job-1", "jenkins-job-2"
+# repository.mapping.git-user/git-repo:ref-name = "foo-job-1", "foo-job-2"
+repository.mapping.git-user/git-repo = "jenkins-job-1", "jenkins-job-2"
