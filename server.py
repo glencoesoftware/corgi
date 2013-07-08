@@ -183,13 +183,13 @@ class EventHandler(tornado.web.RequestHandler):
 
         # Trigger jenkins jobs
         jobs = config.get('repository.mapping.%s:%s' %
-                (data['repository']['full_name'].replace('/', '.'),
-                (data['base']['ref']))
+                (data['repository']['full_name'],
+                data['base']['ref'])
         )
 
         if not jobs:
             jobs = config.get('repository.mapping.%s' %
-                data['repository']['full_name'].replace('/', '.')
+                data['repository']['full_name']
             )
 
         if jobs:
