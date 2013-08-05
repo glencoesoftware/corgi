@@ -140,7 +140,7 @@ def get_issue_titles(issues):
     return titles
 
 
-def update_pr_description(pullrequest, dryrun=False):
+def update_pr_description(pullrequest):
     log.info('Updating PR description for %s PR %s' % (pullrequest.base.repo.full_name, pullrequest.number))
     body = pullrequest.body
     issues = get_issues_from_pr(pullrequest)
@@ -168,7 +168,7 @@ def update_pr_description(pullrequest, dryrun=False):
 
     if updated_body != body:
         log.info('Committing new body')
-        if not dryrun:
+        if not config.get('dry-run'):
             pullrequest.edit(body=updated_body)
     else:
         log.info('Body unchanged, skipping commit')
