@@ -54,13 +54,13 @@ log = logging.getLogger('server')
 HEADER = '### Referenced Issues:'
 
 
-def create_tree_url(data):
-    ref = data['pull_request']['head']['ref']
-    url = data['pull_request']['head']['repo']['html_url'] + "/tree/" + ref
+def create_tree_url(data, head_or_base='head'):
+    ref = data['pull_request'][head_or_base]['ref']
+    url = data['pull_request'][head_or_base]['repo']['html_url'] + "/tree/" + ref
     return url
 
 
-def create_issue_update(data):
+def create_issue_update(pullrequest, data):
 
     def make_past_tense(verb):
         if not verb.endswith('d'):
@@ -71,8 +71,10 @@ def create_issue_update(data):
     template = loader.load('updated_pull_request.textile')
     return template.generate(
         data=data,
-        tree_url=create_tree_url(data),
+        head_url=create_tree_url(data, 'head'),
+        base_url=create_tree_url(data, 'base'),
         make_past_tense=make_past_tense,
+        commits=get_commits_from_pr(pullrequest),
     )
 
 
@@ -80,21 +82,26 @@ def update_redmine_issues(pullrequest, data):
     issues = get_issues_from_pr(pullrequest)
     if not issues:
         logging.info("No issues found")
-        return
-
-    logging.info("Updating Redmine issues %s" % ", ".join(map(str, issues)))
-    c = Corgi(config['redmine.url'], config['redmine.auth_key'],
-              config.get('user.mapping.%s' % data['sender']['login']))
-    if c.connected:
-        for issue in issues:
-            if not config.get('dry-run'):
-                if data['action'] == 'closed' and data['pull_request']['merged']:
-                    data['action'] = 'merged'
-                status = config.get('redmine.status.on-pr-%s' % data['action'])
-                c.update_issue(issue, create_issue_update(data), status)
-            logging.info("Added comment to issue %s" % issue)
     else:
-        logging.error("Connection to Redmine failed")
+        logging.info("Updating Redmine issues %s" % ", ".join(map(str, issues)))
+
+    if issues and not config.get('dry-run'):
+        c = Corgi(config['redmine.url'], config['redmine.auth_key'],
+              config.get('user.mapping.%s' % data['sender']['login']))
+        if not c.connected:
+            logging.error("Connection to Redmine failed")
+            return
+
+    if data['action'] == 'closed' and data['pull_request']['merged']:
+        data['action'] = 'merged'
+    status = config.get('redmine.status.on-pr-%s' % data['action'])
+    update_message = create_issue_update(pullrequest, data)
+    logging.debug(update_message)
+
+    if not config.get('dry-run'):
+        for issue in issues:
+            c.update_issue(issue, update_message, status)
+            logging.info("Added comment to issue %s" % issue)
 
 
 def run_jenkins_job(job):
