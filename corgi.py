@@ -30,11 +30,13 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 """
 
-import logging, copy
+import logging
+import copy
 
 from redmine import Redmine
 
 logger = logging.getLogger('corgi')
+
 
 class RedmineServerUnset(Exception):
 
@@ -44,14 +46,18 @@ class RedmineServerUnset(Exception):
     def __str__(self):
         return repr("Redmine server information unset- %s" % self.value)
 
+
 class RedmineServerAlreadySet(Exception):
 
     def __init__(self, value):
         self.value = value
 
     def __str__(self):
-        return repr("Redmine server information has already been set- %s" \
-            % self.value)
+        return repr(
+            "Redmine server information has already been set- %s"
+            % self.value
+        )
+
 
 class RedmineAlreadyConnected(Exception):
 
@@ -61,6 +67,7 @@ class RedmineAlreadyConnected(Exception):
     def __str__(self):
         return repr(self.value)
 
+
 class RedmineNotConnected(Exception):
 
     def __init__(self, value=""):
@@ -68,6 +75,7 @@ class RedmineNotConnected(Exception):
 
     def __str__(self):
         return repr("Not connected to Redmine server- %s" % self.value)
+
 
 class Corgi(object):
     """
@@ -78,7 +86,7 @@ class Corgi(object):
     ever want to.
     """
 
-    def __init__(self, serverURL = None, authKey = None, impersonate=None):
+    def __init__(self, serverURL=None, authKey=None, impersonate=None):
         """
         Constructor which takes the URL for the Redmine server and
         associated user authentication key. Will set up the instance
@@ -133,8 +141,7 @@ class Corgi(object):
         if self._authKey is None:
             self._authKey = str(authkey)
         else:
-            raise RedmineServerAlreadySet(\
-                "Authentication key already set.")
+            raise RedmineServerAlreadySet("Authentication key already set.")
 
     def get_auth_key(self):
         return copy.copy(self._authKey)
@@ -154,11 +161,13 @@ class Corgi(object):
                                         impersonate=self._impersonate)
                 self.connected = True
             else:
-                raise RedmineServerUnset(\
-                    'Please set server URL and authentication key.')
+                raise RedmineServerUnset(
+                    'Please set server URL and authentication key.'
+                )
         else:
-            raise RedmineAlreadyConnected("Already connected to %s" % \
-                self._serverURL)
+            raise RedmineAlreadyConnected(
+                "Already connected to %s" % self._serverURL
+            )
 
     def new_issue(self, project, subject, description):
         """
@@ -171,7 +180,7 @@ class Corgi(object):
         """
         if self.connected:
             p = self._redmine.projects['project']
-            issue = p.issues.new(subject = subject, description = description)
+            issue = p.issues.new(subject=subject, description=description)
             return issue.id
         else:
             raise RedmineNotConnected()
