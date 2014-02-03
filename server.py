@@ -225,7 +225,7 @@ class EventHandler(tornado.web.RequestHandler):
             logging.info("No Jenkins job mappings found")
 
 
-if __name__ == "__main__":
+def main():
     # Set up our log level
     try:
         filename = config['server.logging_filename']
@@ -258,3 +258,6 @@ if __name__ == "__main__":
     http_server = tornado.httpserver.HTTPServer(application)
     http_server.listen(port, host)
     tornado.ioloop.IOLoop.instance().start()
+
+if __name__ == "__main__":
+    main()
