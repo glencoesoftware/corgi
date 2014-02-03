@@ -29,7 +29,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import simplejson
 import logging
-import sys
 import re
 import os
 
@@ -67,7 +66,9 @@ def create_issue_update(data):
             return verb + 'd'
         return verb
 
-    loader = tornado.template.Loader(os.path.join(os.path.dirname(__file__), 'templates'))
+    loader = tornado.template.Loader(
+        os.path.join(os.path.dirname(__file__), 'templates')
+    )
     template = loader.load('updated_pull_request.textile')
     return template.generate(
         data=data,
@@ -85,16 +86,17 @@ def update_redmine_issues(pullrequest, data):
     logging.info("Updating Redmine issues %s" % ", ".join(map(str, issues)))
     c = Corgi(config['redmine.url'], config['redmine.auth_key'],
               config.get('user.mapping.%s' % data['sender']['login']))
-    if c.connected:
-        for issue in issues:
-            if not config.get('dry-run'):
-                if data['action'] == 'closed' and data['pull_request']['merged']:
-                    data['action'] = 'merged'
-                status = config.get('redmine.status.on-pr-%s' % data['action'])
-                c.update_issue(issue, create_issue_update(data), status)
-            logging.info("Added comment to issue %s" % issue)
-    else:
+    if not c.connected:
         logging.error("Connection to Redmine failed")
+        return
+
+    for issue in issues:
+        if not config.get('dry-run'):
+            if data['action'] == 'closed' and data['pull_request']['merged']:
+                data['action'] = 'merged'
+            status = config.get('redmine.status.on-pr-%s' % data['action'])
+            c.update_issue(issue, create_issue_update(data), status)
+        logging.info("Added comment to issue %s" % issue)
 
 
 def run_jenkins_job(job):
@@ -133,12 +135,21 @@ def get_issue_titles(issues):
 
 
 def update_pr_description(pullrequest, dryrun=False):
-    log.info('Updating PR description for %s PR %s' % (pullrequest.base.repo.full_name, pullrequest.number))
+    log.info(
+        'Updating PR description for %s PR %s' %
+            (pullrequest.base.repo.full_name, pullrequest.number)
+    )
     body = pullrequest.body
     issues = get_issues_from_pr(pullrequest)
     titles = get_issue_titles(issues)
-    links = '\n'.join('* [Issue %s: %s](%sissues/%s)' % (issue, titles[issue], config['redmine.url'], issue)
-                      for issue in issues)
+    links = list()
+    for issue in issues:
+        link = '* [Issue %s: %s](%sissues/%s)' % (
+            issue, titles[issue], config['redmine.url'], issue
+        )
+        links.append(link)
+    links = '\n'.join(links)
+
     lines = [line.strip() for line in body.split('\n')]
     if HEADER in lines:
         log.info('Found existing list of issues, updating')
@@ -167,15 +178,20 @@ def update_pr_description(pullrequest, dryrun=False):
 
     return updated_body
 
+
 class EventHandler(tornado.web.RequestHandler):
 
     def post(self):
         data = simplejson.loads(self.request.body)
-        logging.info("Received event for PR %s" % data['pull_request']['number'])
+        logging.info(
+            "Received event for PR %s" % data['pull_request']['number']
+        )
 
         try:
-            pullrequest = get_pullrequest(data['repository']['full_name'],
-                              data['pull_request']['number'])
+            pullrequest = get_pullrequest(
+                data['repository']['full_name'],
+                data['pull_request']['number']
+            )
 
             # Update Redmine issues
             update_redmine_issues(pullrequest, data)
@@ -187,14 +203,16 @@ class EventHandler(tornado.web.RequestHandler):
             logging.exception("Exception updating cross-links")
 
         # Trigger jenkins jobs
-        jobs = config.get('repository.mapping.%s:%s' %
-                (data['repository']['full_name'],
-                data['pull_request']['base']['ref'])
+        jobs = config.get(
+            'repository.mapping.%s:%s' % (
+                data['repository']['full_name'],
+                data['pull_request']['base']['ref']
+            )
         )
 
         if not jobs:
-            jobs = config.get('repository.mapping.%s' %
-                data['repository']['full_name']
+            jobs = config.get(
+                'repository.mapping.%s' % data['repository']['full_name']
             )
 
         if jobs:
