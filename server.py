@@ -29,7 +29,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import simplejson
 import logging
-import sys
 import re
 import os
 
@@ -56,7 +55,10 @@ HEADER = '### Referenced Issues:'
 
 def create_tree_url(data, head_or_base='head'):
     ref = data['pull_request'][head_or_base]['ref']
-    url = data['pull_request'][head_or_base]['repo']['html_url'] + "/tree/" + ref
+    url = '%s/tree/%s' % (
+        data['pull_request'][head_or_base]['repo']['html_url'],
+        ref
+    )
     return url
 
 
@@ -67,7 +69,9 @@ def create_issue_update(pullrequest, data):
             return verb + 'd'
         return verb
 
-    loader = tornado.template.Loader(os.path.join(os.path.dirname(__file__), 'templates'))
+    loader = tornado.template.Loader(
+        os.path.join(os.path.dirname(__file__), 'templates')
+    )
     template = loader.load('updated_pull_request.textile')
     return template.generate(
         data=data,
@@ -83,11 +87,15 @@ def update_redmine_issues(pullrequest, data):
     if not issues:
         logging.info("No issues found")
     else:
-        logging.info("Updating Redmine issues %s" % ", ".join(map(str, issues)))
+        logging.info(
+            "Updating Redmine issues %s" % ", ".join(map(str, issues))
+        )
 
     if issues and not config.get('dry-run'):
-        c = Corgi(config['redmine.url'], config['redmine.auth_key'],
-              config.get('user.mapping.%s' % data['sender']['login']))
+        c = Corgi(
+            config['redmine.url'], config['redmine.auth_key'],
+            config.get('user.mapping.%s' % data['sender']['login'])
+        )
         if not c.connected:
             logging.error("Connection to Redmine failed")
             return
@@ -148,12 +156,21 @@ def get_issue_titles(issues):
 
 
 def update_pr_description(pullrequest):
-    log.info('Updating PR description for %s PR %s' % (pullrequest.base.repo.full_name, pullrequest.number))
+    log.info(
+        'Updating PR description for %s PR %s' %
+            (pullrequest.base.repo.full_name, pullrequest.number)
+    )
     body = pullrequest.body
     issues = get_issues_from_pr(pullrequest)
     titles = get_issue_titles(issues)
-    links = '\n'.join('* [Issue %s: %s](%sissues/%s)' % (issue, titles[issue], config['redmine.url'], issue)
-                      for issue in issues)
+    links = list()
+    for issue in issues:
+        link = '* [Issue %s: %s](%sissues/%s)' % (
+            issue, titles[issue], config['redmine.url'], issue
+        )
+        links.append(link)
+    links = '\n'.join(links)
+
     lines = [line.strip() for line in body.split('\n')]
     if HEADER in lines:
         log.info('Found existing list of issues, updating')
@@ -182,15 +199,20 @@ def update_pr_description(pullrequest):
 
     return updated_body
 
+
 class EventHandler(tornado.web.RequestHandler):
 
     def post(self):
         data = simplejson.loads(self.request.body)
-        logging.info("Received event for PR %s" % data['pull_request']['number'])
+        logging.info(
+            "Received event for PR %s" % data['pull_request']['number']
+        )
 
         try:
-            pullrequest = get_pullrequest(data['repository']['full_name'],
-                              data['pull_request']['number'])
+            pullrequest = get_pullrequest(
+                data['repository']['full_name'],
+                data['pull_request']['number']
+            )
 
             # Update Redmine issues
             update_redmine_issues(pullrequest, data)
@@ -202,14 +224,16 @@ class EventHandler(tornado.web.RequestHandler):
             logging.exception("Exception updating cross-links")
 
         # Trigger jenkins jobs
-        jobs = config.get('repository.mapping.%s:%s' %
-                (data['repository']['full_name'],
-                data['pull_request']['base']['ref'])
+        jobs = config.get(
+            'repository.mapping.%s:%s' % (
+                data['repository']['full_name'],
+                data['pull_request']['base']['ref']
+            )
         )
 
         if not jobs:
-            jobs = config.get('repository.mapping.%s' %
-                data['repository']['full_name']
+            jobs = config.get(
+                'repository.mapping.%s' % data['repository']['full_name']
             )
 
         if jobs:
@@ -222,7 +246,7 @@ class EventHandler(tornado.web.RequestHandler):
             logging.info("No Jenkins job mappings found")
 
 
-if __name__ == "__main__":
+def main():
     # Set up our log level
     try:
         filename = config['server.logging_filename']
@@ -255,3 +279,6 @@ if __name__ == "__main__":
     http_server = tornado.httpserver.HTTPServer(application)
     http_server.listen(port, host)
     tornado.ioloop.IOLoop.instance().start()
+
+if __name__ == "__main__":
+    main()
