@@ -53,13 +53,13 @@ log = logging.getLogger('server')
 HEADER = '### Referenced Issues:'
 
 
-def create_tree_url(data):
-    ref = data['pull_request']['head']['ref']
-    url = data['pull_request']['head']['repo']['html_url'] + "/tree/" + ref
+def create_tree_url(data, head_or_base='head'):
+    ref = data['pull_request'][head_or_base]['ref']
+    url = data['pull_request'][head_or_base]['repo']['html_url'] + "/tree/" + ref
     return url
 
 
-def create_issue_update(data):
+def create_issue_update(pullrequest, data):
 
     def make_past_tense(verb):
         if not verb.endswith('d'):
@@ -72,8 +72,10 @@ def create_issue_update(data):
     template = loader.load('updated_pull_request.textile')
     return template.generate(
         data=data,
-        tree_url=create_tree_url(data),
+        head_url=create_tree_url(data, 'head'),
+        base_url=create_tree_url(data, 'base'),
         make_past_tense=make_past_tense,
+        commits=get_commits_from_pr(pullrequest),
     )
 
 
@@ -81,22 +83,26 @@ def update_redmine_issues(pullrequest, data):
     issues = get_issues_from_pr(pullrequest)
     if not issues:
         logging.info("No issues found")
-        return
+    else:
+        logging.info("Updating Redmine issues %s" % ", ".join(map(str, issues)))
 
-    logging.info("Updating Redmine issues %s" % ", ".join(map(str, issues)))
-    c = Corgi(config['redmine.url'], config['redmine.auth_key'],
+    if issues and not config.get('dry-run'):
+        c = Corgi(config['redmine.url'], config['redmine.auth_key'],
               config.get('user.mapping.%s' % data['sender']['login']))
-    if not c.connected:
-        logging.error("Connection to Redmine failed")
-        return
+        if not c.connected:
+            logging.error("Connection to Redmine failed")
+            return
 
-    for issue in issues:
-        if not config.get('dry-run'):
-            if data['action'] == 'closed' and data['pull_request']['merged']:
-                data['action'] = 'merged'
-            status = config.get('redmine.status.on-pr-%s' % data['action'])
-            c.update_issue(issue, create_issue_update(data), status)
-        logging.info("Added comment to issue %s" % issue)
+    if data['action'] == 'closed' and data['pull_request']['merged']:
+        data['action'] = 'merged'
+    status = config.get('redmine.status.on-pr-%s' % data['action'])
+    update_message = create_issue_update(pullrequest, data)
+    logging.debug(update_message)
+
+    if not config.get('dry-run'):
+        for issue in issues:
+            c.update_issue(issue, update_message, status)
+            logging.info("Added comment to issue %s" % issue)
 
 
 def run_jenkins_job(job):
@@ -118,9 +124,17 @@ def get_pullrequest(repo_name, pr_number):
     return repo.get_pull(pr_number)
 
 
+def get_commits_from_pr(pullrequest):
+    cached = getattr(pullrequest, '_cached_commits', None)
+    if not cached:
+        cached = pullrequest.get_commits()
+        setattr(pullrequest, '_cached_commits', cached)
+    return cached
+
+
 def get_issues_from_pr(pullrequest):
     text = [pullrequest.title, pullrequest.body]
-    for commit in pullrequest.get_commits():
+    for commit in get_commits_from_pr(pullrequest):
         text.append(commit.commit.message)
     return sorted(set(map(int, re.findall(r'\bgs-(\d+)', ' '.join(text)))))
 
@@ -134,7 +148,7 @@ def get_issue_titles(issues):
     return titles
 
 
-def update_pr_description(pullrequest, dryrun=False):
+def update_pr_description(pullrequest):
     log.info(
         'Updating PR description for %s PR %s' %
             (pullrequest.base.repo.full_name, pullrequest.number)
@@ -171,7 +185,7 @@ def update_pr_description(pullrequest, dryrun=False):
 
     if updated_body != body:
         log.info('Committing new body')
-        if not dryrun:
+        if not config.get('dry-run'):
             pullrequest.edit(body=updated_body)
     else:
         log.info('Body unchanged, skipping commit')
