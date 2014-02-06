@@ -55,7 +55,10 @@ HEADER = '### Referenced Issues:'
 
 def create_tree_url(data, head_or_base='head'):
     ref = data['pull_request'][head_or_base]['ref']
-    url = data['pull_request'][head_or_base]['repo']['html_url'] + "/tree/" + ref
+    url = '%s/tree/%s' % (
+        data['pull_request'][head_or_base]['repo']['html_url'],
+        ref
+    )
     return url
 
 
@@ -84,11 +87,15 @@ def update_redmine_issues(pullrequest, data):
     if not issues:
         logging.info("No issues found")
     else:
-        logging.info("Updating Redmine issues %s" % ", ".join(map(str, issues)))
+        logging.info(
+            "Updating Redmine issues %s" % ", ".join(map(str, issues))
+        )
 
     if issues and not config.get('dry-run'):
-        c = Corgi(config['redmine.url'], config['redmine.auth_key'],
-              config.get('user.mapping.%s' % data['sender']['login']))
+        c = Corgi(
+            config['redmine.url'], config['redmine.auth_key'],
+            config.get('user.mapping.%s' % data['sender']['login'])
+        )
         if not c.connected:
             logging.error("Connection to Redmine failed")
             return
