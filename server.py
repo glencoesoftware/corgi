@@ -38,6 +38,7 @@ import tornado.web
 import tornado.template
 
 from jenkinsapi.jenkins import Jenkins
+from jenkinsapi.util.crumb_requester import CrumbRequester
 
 import github
 
@@ -113,9 +114,13 @@ def update_redmine_issues(pullrequest, data):
 
 
 def run_jenkins_job(job):
+    requester = CrumbRequester(config['jenkins.url'],
+                               username=config['jenkins.username'],
+                               password=config['jenkins.password'])
     jenkins = Jenkins(config['jenkins.url'],
                       username=config['jenkins.username'],
-                      password=config['jenkins.password'])
+                      password=config['jenkins.password'],
+                      requester=requester)
     if job in jenkins:
         logging.debug('Invoking Jenkins job %s' % job)
         if not config.get('dry-run'):
@@ -279,6 +284,7 @@ def main():
     http_server = tornado.httpserver.HTTPServer(application)
     http_server.listen(port, host)
     tornado.ioloop.IOLoop.instance().start()
+
 
 if __name__ == "__main__":
     main()
