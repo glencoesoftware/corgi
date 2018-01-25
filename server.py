@@ -38,7 +38,7 @@ import tornado.web
 import tornado.template
 
 from jenkinsapi.jenkins import Jenkins
-from jenkinsapi.util.crumb_requester import CrumbRequester
+from jenkinsapi.utils.crumb_requester import CrumbRequester
 
 import github
 
