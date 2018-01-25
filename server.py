@@ -114,11 +114,11 @@ def update_redmine_issues(pullrequest, data):
 
 
 def run_jenkins_job(job):
-    requester = CrumbRequester(config['jenkins.url'],
-                               user=config['jenkins.username'],
+    requester = CrumbRequester(baseurl=config['jenkins.url'],
+                               username=config['jenkins.username'],
                                password=config['jenkins.password'])
     jenkins = Jenkins(config['jenkins.url'],
-                      user=config['jenkins.username'],
+                      username=config['jenkins.username'],
                       password=config['jenkins.password'],
                       requester=requester)
     if job in jenkins:
